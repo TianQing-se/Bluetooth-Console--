@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蓝牙控制台</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f5;color:#182e31;font:15px "Microsoft YaHei",sans-serif}header{background:#102c30;color:white;padding:24px max(20px,calc((100vw - 1150px)/2));display:flex;gap:12px;align-items:center;flex-wrap:wrap}h1{font-size:24px;margin:0 auto 0 0}h2{font-size:17px;margin:0 0 12px}main{max-width:1190px;margin:auto;padding:20px}nav,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}section{background:white;border:1px solid #d8e4e4;padding:16px;border-radius:12px;margin:14px 0}button,input,select,textarea{font:inherit;border:1px solid #a9bcbc;border-radius:6px;padding:7px;color:inherit;background:white}button{cursor:pointer;color:#153539}button.primary,button[aria-pressed=true]{background:#08766b;color:white;border-color:#08766b}button:disabled{opacity:.5;cursor:default}input[type=number]{width:80px}input[type=range]{width:100%;accent-color:#08766b}textarea{width:100%;min-height:130px}code{overflow-wrap:anywhere;color:#065f55}#board{position:relative;min-height:380px;overflow:auto;background:#e9f0f0;border-radius:8px;margin-top:12px}.card{position:absolute;min-width:160px;min-height:115px;background:#fff;border:1px solid #a9c4c2;border-radius:9px;padding:10px;overflow:auto;display:flex;flex-direction:column;gap:6px}.card.edit{resize:both}.handle{display:flex;justify-content:space-between;align-items:center;gap:5px}.edit .handle{cursor:move;touch-action:none}.pad{position:relative;flex:1;min-height:45px;touch-action:none;border:1px solid #aac6c3;border-radius:5px;background:linear-gradient(90deg,transparent 49.5%,#a8c4c1 50%,transparent 50.5%),linear-gradient(transparent 49.5%,#a8c4c1 50%,transparent 50.5%),#edf6f5}.dot{position:absolute;width:14px;height:14px;background:#08766b;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}label{display:inline-flex;gap:5px;align-items:center}.field{margin:6px 0}dialog{border:1px solid #a9bcbc;border-radius:12px;width:min(520px,94vw)}dialog::backdrop{background:#102c3077}dialog label{display:flex;justify-content:space-between;margin:8px 0}#message{min-height:24px;color:#28565a}small{color:#45676b}
+#library{width:min(680px,94vw);padding:22px;color:#182e31}
+.library-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(155px,100%),1fr));gap:12px;margin:16px 0}
+.component-choice{display:grid;gap:8px;text-align:left;padding:12px;border-radius:12px}
+.component-choice:hover,.component-choice:focus-visible{border-color:#08766b;background:#f3faf9;outline-offset:3px}
+.component-demo{display:grid;place-items:center;height:84px;background:#edf6f5;border-radius:8px;color:#08766b}
+.demo-slider{width:75%;height:6px;border-radius:8px;background:linear-gradient(90deg,#08766b 60%,#bcd5d2 60%);position:relative}
+.demo-slider .dot{left:60%;top:50%}
+.demo-switch{position:relative;width:44px;height:24px;background:#08766b;border-radius:20px}
+.demo-switch::after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;background:white;border-radius:50%}
+.demo-xy{width:80px;height:64px}.demo-xy .dot{left:65%;top:35%}
+.demo-button{padding:8px 15px;border-radius:7px;background:#176fc2;color:white;font-size:13px}
+#libraryMessage{color:#89451f;margin:0 0 12px}
+header{position:sticky;top:0;z-index:2;padding-block:12px}
+details{background:white;border:1px solid #d8e4e4;border-radius:12px;margin:12px 0}
+summary{cursor:pointer;padding:12px 16px;font-weight:600}
+.settings-body{padding:0 16px 14px}
+#connectionMessage:empty,#profileStatus:empty{display:none}
+.profile-actions{margin-top:16px}
+#frameParts>div{background:#edf6f5;padding:8px 12px;border-radius:8px;max-width:100%}
+#frameParts code{display:block;margin-top:4px}
+.log-heading{justify-content:space-between}
+.log-heading h2{margin:0}
+#sendLog{padding-left:24px}
+#sendLog li{margin-block:8px;overflow-wrap:anywhere}
+@media(max-width:640px){
+ main{padding:12px}
+ button{min-height:40px}
+ #board:not(.layout-edit){min-height:0;padding:12px}
+ #board:not(.layout-edit) #surface{display:grid;gap:10px;width:100%!important;height:auto!important}
+ #board:not(.layout-edit) .card{position:relative;inset:auto!important;width:100%!important;min-width:0}
+}
+body{background:#f1f6fc;color:#152d47;accent-color:#176fc2}
+header{background:#10375c;border-bottom:1px solid #286292}
+h1 small{display:block;color:#b7dcff;font:600 11px Consolas,monospace;margin-top:4px}
+section,details,dialog,#library{background:white;color:#152d47;border-color:#ceddeb}
+button,input,select,textarea{border-color:#a8bfd6}
+button.primary,button[aria-pressed=true]{background:#176fc2;border-color:#176fc2;color:white}
+button:focus-visible,summary:focus-visible{outline:2px solid #176fc2;outline-offset:3px}
+#board{background:#edf5ff;border:1px solid #ceddeb;background-image:radial-gradient(#c4d8ed 1px,transparent 1px);background-size:16px 16px}
+.card,.pad{border-color:#a8bfd6}
+.pad,.component-demo,#frameParts>div{background-color:#edf5ff}
+.component-choice:hover,.component-choice:focus-visible{background:#edf5ff;border-color:#176fc2}
+.dot,.demo-switch{background:#176fc2}
+input[type=range]{accent-color:#176fc2}
+code{color:#175b9d}
+.bluetooth-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#176fc2;color:white;font:700 28px "Segoe UI Symbol",sans-serif}
+</style>
+<header><div class="bluetooth-mark" aria-hidden="true">ᛒ</div><h1>蓝牙控制台</h1><button id="connect" class="primary">连接蓝牙串口</button><span id="status">未连接</span></header>
+<main><details><summary>连接设置</summary><div class="settings-body"><div class="row"><label for="baud">波特率（bps）</label><input id="baud" type="number" min="1" step="1" value="9600" list="baudRates" style="width:130px"><datalist id="baudRates"><option value="9600"><option value="19200"><option value="38400"><option value="57600"><option value="115200"></datalist><button id="applyBaud" type="button">保存波特率</button><span id="baudStatus" role="status"></span></div><p><small>连接前可直接输入波特率。已连接时，请断开并重新连接以应用修改。若模块通过 UART 连接设备，请确认两端的波特率一致。</small></p></div></details><p id="connectionMessage" role="status"></p><nav><button id="panelTab" aria-pressed="true">组件控制</button><button id="rawTab" aria-pressed="false">串口调试</button></nav>
+<div id="panel">
+<section><h2>控制面板</h2><div class="row"><button id="edit" aria-pressed="false">编辑布局</button><button id="addCard">添加组件</button><label><input id="live" type="checkbox" checked>操作时发送</label></div>
+<div id="board"><div id="surface" style="position:relative"></div></div></section>
+<section class="row"><button class="primary" id="sendFrame">发送当前帧</button><code id="preview"></code></section>
+<details id="setup"><summary>帧变量与配置方案</summary><div class="settings-body">
+<h2>帧变量 · 按从上到下的顺序发送</h2><div id="fields"></div><button id="addField">添加字节变量</button>
+<div class="row profile-actions"><button id="importProfile">导入方案</button><button id="exportProfile">导出方案</button><input hidden id="profileFile" type="file" accept=".json,application/json"></div>
+<p id="profileStatus" role="status"></p></div></details></div>
+<div id="raw" hidden><section><h2>直接发送</h2><div class="row"><select id="encoding" aria-label="发送格式"><option>HEX</option><option>纯文本 UTF-8</option></select><button class="primary" id="sendRaw">发送</button></div><p><small>HEX 可输入 A5 1E 32 50 5A 或 A51E32505A。直接发送不会自动加包头、校验或包尾。</small></p><textarea id="payload" aria-label="发送内容" placeholder="输入要发送的内容"></textarea></section><section><h2>当前组件帧</h2><div id="frameParts" class="row"></div></section><section><div class="row log-heading"><h2>最近发送</h2><button id="clearLog">清空记录</button></div><p id="emptyLog">暂无发送记录</p><ol id="sendLog"></ol></section></div>
+<p id="message" role="status"></p></main>
+<dialog id="library" aria-labelledby="libraryTitle">
+  <h2 id="libraryTitle">添加组件</h2>
+  <div class="library-grid">
+    <button type="button" class="component-choice" data-type="slider">
+      <span class="component-demo" aria-hidden="true"><span class="demo-slider"><span class="dot"></span></span></span>
+      <strong>滑动条</strong><small>连续调节一个变量</small>
+    </button>
+    <button type="button" class="component-choice" data-type="switch">
+      <span class="component-demo" aria-hidden="true"><span class="demo-switch"></span></span>
+      <strong>开关</strong><small>在两个预设值之间切换</small>
+    </button>
+    <button type="button" class="component-choice" data-type="xy">
+      <span class="component-demo" aria-hidden="true"><span class="pad demo-xy"><span class="dot"></span></span></span>
+      <strong>XY 滑动框</strong><small>同时调节两个变量</small>
+    </button>
+    <button type="button" class="component-choice" data-type="button">
+      <span class="component-demo" aria-hidden="true"><span class="demo-button">按下发送</span></span>
+      <strong>按钮</strong><small>按下时发送一个变量值</small>
+    </button>
+  </div>
+  <p id="libraryMessage" role="status" hidden></p>
+  <form method="dialog"><button>取消</button></form>
+</dialog>
+<dialog id="config" aria-labelledby="configTitle"><form id="settings"><h2 id="configTitle">组件设置</h2><div id="options"></div><div class="row"><button class="primary">保存</button><button type="button" id="cancel">取消</button><button type="button" id="remove">删除组件</button></div></form></dialog>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const make = (tag, text) => Object.assign(document.createElement(tag), {textContent:text ?? ''});
+const defaults = {fields:[{id:'byte1',name:'变量 1',value:0}],cards:[]};
+const key = 'hc05-console-v1';
+const state = JSON.parse(localStorage.getItem(key) || 'null') || structuredClone(defaults);
+const save = () => localStorage.setItem(key,JSON.stringify(state));
+const note = msg => $('message').textContent = msg;
+const field = id => state.fields.find(item => item.id === id);
+const hex = bytes => Array.from(bytes,b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+function frame(values) {
+  return Uint8Array.of(0xA5,...values,values.reduce((sum,n)=>sum+n,0)&255,0x5A);
+}
+function parseHex(input) {
+  const clean = input.replace(/\s+/g,'');
+  if (!/^(?:[0-9a-f]{2})+$/i.test(clean)) throw Error('请输入完整的 HEX 字节，例如 A5 01 01 5A。');
+  return Uint8Array.from(clean.match(/../g),pair=>parseInt(pair,16));
+}
+const packet = () => frame(state.fields.map(item=>item.value));
+function preview(){
+  const bytes=packet();
+  $('preview').textContent=hex(bytes);
+  const parts=[['包头',bytes.slice(0,1)],['变量',bytes.slice(1,-2)],['校验和',bytes.slice(-2,-1)],['包尾',bytes.slice(-1)]];
+  $('frameParts').replaceChildren(...parts.map(([label,data])=>{
+    const part=make('div');
+    part.append(make('small',label),make('code',hex(data)));
+    return part;
+  }));
+}
+function recordSend(bytes,result){
+  const excerpt=hex(bytes.subarray(0,64))+(bytes.length>64?' …':'');
+  const entry=make('li',new Date().toLocaleTimeString()+' · '+result+' · '+bytes.length+' 字节 ');
+  entry.append(make('code',excerpt));
+  const log=$('sendLog');
+  log.prepend(entry);
+  if(log.children.length>30)log.lastElementChild.remove();
+  $('emptyLog').hidden=true;
+}
+$('clearLog').onclick=()=>{
+  $('sendLog').replaceChildren();
+  $('emptyLog').hidden=false;
+};
+const baudKey = 'hc05-console-baud';
+$('baud').value = localStorage.getItem(baudKey) || '9600';
+function saveBaud() {
+  const rate = $('baud').valueAsNumber;
+  if (!Number.isInteger(rate) || rate <= 0) throw Error('请输入大于 0 的整数波特率。');
+  localStorage.setItem(baudKey, String(rate));
+  return rate;
+}
+$('applyBaud').onclick = () => {
+  try {
+    const rate = saveBaud();
+    $('baudStatus').textContent = '已保存 ' + rate + ' bps' + (port ? '，重新连接后应用' : '');
+  } catch (error) { $('baudStatus').textContent = error.message; }
+};
+const connectionNote = msg => $('connectionMessage').textContent = msg;
+let port, writer, busy = false, generation = 0, queue = Promise.resolve(), timer;
+function stopLive(){clearTimeout(timer);timer = undefined;}
+async function send(bytes,automatic = false) {
+  if (!writer || busy) { if (!automatic) note('请先连接蓝牙串口。'); return; }
+  const target = writer;
+  const session = generation;
+  queue = queue.then(async ()=>{
+    if (session !== generation || writer !== target) return;
+    try { await target.write(bytes); recordSend(bytes,'已发送'); note('已发送 '+hex(bytes)); }
+    catch(error){recordSend(bytes,'失败');note('发送失败：'+error.message);}
+  });
+  await queue;
+}
+function connectionUI() {
+  $('connect').textContent = writer ? '断开连接' : '连接蓝牙串口';
+  $('status').textContent = busy ? '处理中' : writer ? '已连接' : '未连接';
+  $('connect').disabled = busy;
+}
+async function closePort() {
+  const oldPort = port;
+  const oldWriter = writer;
+  generation++;
+  stopLive();
+  writer = port = undefined;
+  if (oldWriter) {
+    try { await oldWriter.abort(); } catch {}
+    oldWriter.releaseLock();
+  }
+  if (oldPort) await oldPort.close();
+}
+$('connect').onclick = async ()=>{
+  if (!navigator.serial) {connectionNote('请用桌面 Chrome 打开此文件，或通过 localhost 打开页面。');return;}
+  busy = true;
+  connectionUI();
+  try {
+    if (port) {await closePort();connectionNote('连接已关闭。');}
+    else {
+      const baudRate = saveBaud();
+      if (!Number.isInteger(baudRate)||baudRate<=0) throw Error('请输入有效的波特率。');
+      const selected = await navigator.serial.requestPort();
+      await selected.open({baudRate});
+      port = selected;
+      writer = port.writable.getWriter();
+      connectionNote('蓝牙串口已连接，串口打开参数为 '+baudRate+' bps。');
+    }
+  } catch(error){connectionNote('连接操作失败：'+error.message);}
+  finally {busy = false;connectionUI();}
+};
+navigator.serial?.addEventListener('disconnect',async event=>{
+  if (event.target !== port || busy) return;
+  busy = true;
+  connectionUI();
+  try {await closePort();} catch {}
+  busy = false;
+  connectionUI();
+  connectionNote('蓝牙串口已断开。');
+});
+function button(name,action) {
+  const el = make('button',name);
+  el.type = 'button';
+  el.onclick = action;
+  return el;
+}
+function number(value,max=255) {
+  const el = make('input');
+  Object.assign(el,{type:'number',min:0,max,step:1,required:true,value});
+  return el;
+}
+function renderFields() {
+  $('fields').replaceChildren(...state.fields.map((item,index)=>{
+    const row = make('div');
+    row.className = 'row field';
+    const name = make('input');
+    name.value = item.name;
+    name.setAttribute('aria-label','变量名');
+    name.onchange = ()=>{item.name = name.value.trim() || '变量';save();render();};
+    const value = number(item.value);
+    value.setAttribute('aria-label',item.name+' 的值');
+    value.onchange = ()=>{
+      if(value.checkValidity()) item.value = value.valueAsNumber;
+      else note('变量值必须是 0～255 的整数。');
+      save();render();
+    };
+    const move = offset=>{
+      const target = index+offset;
+      if(target<0||target>=state.fields.length)return;
+      [state.fields[index],state.fields[target]]=[state.fields[target],state.fields[index]];
+      save();render();
+    };
+    row.append(make('span',String(index+1)),name,value,button('↑',()=>move(-1)),button('↓',()=>move(1)),button('删除',()=>{
+      if(state.fields.length===1){note('至少保留一个字节变量。');return;}
+      if(state.cards.some(card=>card.a===item.id||card.b===item.id)){note('请先解除组件对该变量的绑定。');return;}
+      state.fields.splice(index,1);save();render();
+    }));
+    return row;
+  }));
+}
+let editing = false;
+const observers = [];
+const redrawControls = [];
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+function changed(pairs) {
+  for(const [id,value] of pairs) field(id).value = value;
+  save();preview();
+  [...$('fields').children].forEach((row,index)=>row.querySelector('[type=number]').value=state.fields[index].value);
+  redrawControls.forEach(update=>update());
+  if($('live').checked && writer && timer===undefined) {
+    timer=setTimeout(async ()=>{
+      if($('live').checked && !$('panel').hidden && !editing) await send(packet(),true);
+      timer=undefined;
+    },60);
+  }
+}
+function control(card,box) {
+  const a = field(card.a);
+  const b = field(card.b);
+  const value = make('small');
+  if(card.type==='slider'){
+    const input = make('input');
+    Object.assign(input,{type:'range',min:card.lo,max:card.hi,disabled:editing});
+    input.setAttribute('aria-label',card.name);
+    input.oninput=()=>changed([[card.a,Number(input.value)]]);
+    box.append(input);
+    redrawControls.push(()=>{input.value=a.value;value.textContent=a.name+' = '+a.value;});
+  } else if(card.type==='button'){
+    const action=button(card.label||'按钮',()=>{
+      stopLive();
+      changed([[card.a,card.value]]);
+      stopLive();
+      send(packet());
+    });
+    action.className='primary';
+    action.disabled=editing;
+    box.append(action);
+    redrawControls.push(()=>{value.textContent=a.name+' = '+card.value;});
+  } else if(card.type==='switch'){
+    const toggle = button('',()=>changed([[card.a,a.value===card.on?card.off:card.on]]));
+    toggle.disabled=editing;
+    box.append(toggle);
+    redrawControls.push(()=>{
+      const on=a.value===card.on;
+      toggle.textContent=on?'开':a.value===card.off?'关':'切换到开';
+      toggle.setAttribute('aria-pressed',String(on));
+      value.textContent=a.name+' = '+a.value;
+    });
+  } else {
+    const pad=make('div'),dot=make('div');
+    pad.className='pad';dot.className='dot';pad.append(dot);box.append(pad);
+    const update=event=>{
+      const r=pad.getBoundingClientRect();
+      const x=clamp((event.clientX-r.left)/r.width,0,1);
+      const y=1-clamp((event.clientY-r.top)/r.height,0,1);
+      changed([[card.a,Math.round(card.lo+x*(card.hi-card.lo))],[card.b,Math.round(card.ylo+y*(card.yhi-card.ylo))]]);
+    };
+    pad.onpointerdown=event=>{if(editing||event.button!==0)return;pad.setPointerCapture(event.pointerId);update(event);};
+    pad.onpointermove=event=>{if(!editing&&pad.hasPointerCapture(event.pointerId))update(event);};
+    pad.onpointerup=event=>{if(!editing&&pad.hasPointerCapture(event.pointerId))update(event);};
+    redrawControls.push(()=>{
+      dot.style.left=clamp((a.value-card.lo)/(card.hi-card.lo)*100,0,100)+'%';
+      dot.style.top=clamp((card.yhi-b.value)/(card.yhi-card.ylo)*100,0,100)+'%';
+      value.textContent=a.name+' = '+a.value+' · '+b.name+' = '+b.value;
+    });
+  }
+  box.append(value);
+}
+function surfaceSize(){
+  $('surface').style.height=Math.max(380,...state.cards.map(c=>c.y+c.h+20))+'px';
+  $('surface').style.width=Math.max($('board').clientWidth,...state.cards.map(c=>c.x+c.w+20))+'px';
+}
+function renderCards(){
+  $('board').classList.toggle('layout-edit',editing);
+  observers.splice(0).forEach(observer=>observer.disconnect());
+  redrawControls.length=0;
+  $('surface').replaceChildren();
+  surfaceSize();
+  if(!state.cards.length){
+    const empty=make('p','还没有组件。点击「添加组件」开始自定义。');
+    empty.style.margin='16px';
+    $('surface').append(empty);
+  }
+  for(const card of state.cards){
+    const box=make('article'),head=make('div');
+    box.className='card'+(editing?' edit':'');
+    Object.assign(box.style,{left:card.x+'px',top:card.y+'px',width:card.w+'px',height:card.h+'px'});
+    head.className='handle';
+    head.append(make('strong',card.name));
+    if(editing){
+      head.append(button('设置',()=>configure(card)));
+      head.onpointerdown=event=>{
+        if(event.target.closest('button')||event.button!==0)return;
+        const origin={x:event.clientX,y:event.clientY,left:card.x,top:card.y};
+        head.setPointerCapture(event.pointerId);
+        head.onpointermove=e=>{
+          card.x=Math.max(0,origin.left+e.clientX-origin.x);
+          card.y=Math.max(0,origin.top+e.clientY-origin.y);
+          box.style.left=card.x+'px';box.style.top=card.y+'px';surfaceSize();
+        };
+        head.onlostpointercapture=()=>{head.onpointermove=null;save();};
+      };
+      const observer=new ResizeObserver(()=>{
+        if(!box.offsetWidth)return;
+        card.w=box.offsetWidth;card.h=box.offsetHeight;surfaceSize();save();
+      });
+      observer.observe(box);observers.push(observer);
+    }
+    box.append(head);control(card,box);$('surface').append(box);
+  }
+  redrawControls.forEach(update=>update());
+}
+function configure(card,creating=false){
+  const entries={};
+  $('options').replaceChildren();
+  const add=(key,label,el)=>{
+    const row=make('label',label);
+    row.append(el);$('options').append(row);entries[key]=el;
+  };
+  const name=make('input');name.value=card.name;name.required=true;
+  add('name','组件名称',name);
+  const bind=(key,label)=>{
+    const select=make('select');
+    for(const item of state.fields)select.add(new Option(item.name,item.id));
+    select.value=card[key];add(key,label,select);
+  };
+  if(card.type==='button'){
+    const label=make('input');label.value=card.label||'按下发送';label.required=true;
+    add('label','按钮显示文字',label);
+    bind('a','绑定变量');
+    add('value','按下时变量值',number(card.value??0));
+  } else bind('a',card.type==='xy'?'X 轴变量':'绑定变量');
+  if(card.type==='xy')bind('b','Y 轴变量');
+  if(card.type==='switch'){
+    add('off','关对应值',number(card.off));add('on','开对应值',number(card.on));
+  }else{
+    add('lo',card.type==='xy'?'X 下界':'下界',number(card.lo));
+    add('hi',card.type==='xy'?'X 上界':'上界',number(card.hi));
+    if(card.type==='xy'){
+      add('ylo','Y 下界',number(card.ylo));add('yhi','Y 上界',number(card.yhi));
+    }
+  }
+  const error=make('p');error.setAttribute('role','alert');$('options').append(error);
+  $('settings').onsubmit=event=>{
+    event.preventDefault();
+    const next={...card};
+    for(const [key,el] of Object.entries(entries))next[key]=el.type==='number'?el.valueAsNumber:el.value.trim();
+    if(!next.name){error.textContent='请输入组件名称。';return;}
+    if(next.type==='button'&&(!next.label||!Number.isInteger(next.value)||next.value<0||next.value>255)){error.textContent='请输入按钮文字和 0～255 的按钮值。';return;}
+    if(next.type==='xy'&&next.a===next.b){error.textContent='X 和 Y 需要绑定不同变量。';return;}
+    if(next.type==='switch'&&next.off===next.on){error.textContent='两种开关状态需要不同值。';return;}
+    if(next.type!=='switch'&&(next.lo>=next.hi||(next.type==='xy'&&next.ylo>=next.yhi))){
+      error.textContent='下界必须小于上界。';return;
+    }
+    Object.assign(card,next);
+    if(creating)state.cards.push(card);
+    $('config').close();save();render();
+  };
+  $('configTitle').textContent=creating?'设置 '+card.name:'编辑 '+card.name;
+  $('remove').hidden=creating;
+  $('remove').onclick=()=>{state.cards=state.cards.filter(item=>item!==card);$('config').close();save();render();};
+  $('config').showModal();
+}
+function render(){renderFields();renderCards();preview();}
+$('cancel').onclick=()=>$('config').close();
+$('addField').onclick=()=>{
+  state.fields.push({id:crypto.randomUUID(),name:'变量 '+(state.fields.length+1),value:0});
+  save();render();
+};
+$('edit').onclick=()=>{
+  editing=!editing;stopLive();
+  $('edit').textContent=editing?'完成编辑':'编辑布局';
+  $('edit').setAttribute('aria-pressed',String(editing));
+  renderCards();
+};
+$('addCard').onclick=()=>{
+  $('libraryMessage').hidden=true;
+  $('library').showModal();
+};
+$('library').querySelectorAll('[data-type]').forEach(button=>{
+  button.onclick=()=>{
+    const type=button.dataset.type;
+    const required=type==='xy'?2:1;
+    if(state.fields.length<required){
+      $('libraryMessage').textContent='请先在帧变量区添加至少 '+required+' 个字节变量。';
+      $('libraryMessage').hidden=false;
+      return;
+    }
+    $('library').close();
+    configure({id:crypto.randomUUID(),type,name:{slider:'滑动条',switch:'开关',xy:'XY 滑动框',button:'按钮'}[type],label:'按下发送',value:0,
+      a:state.fields[0].id,b:type==='xy'?state.fields[1].id:undefined,lo:0,hi:100,ylo:0,yhi:100,off:0,on:100,
+      x:12,y:state.cards.length?Math.max(...state.cards.map(c=>c.y+c.h))+12:12,w:280,h:type==='xy'?220:125},true);
+  };
+});
+function validateProfile(profile){
+  const {version,fields,cards}=profile ?? {};
+  const validText=value=>typeof value==='string'&&value.trim().length>0;
+  const byte=value=>Number.isInteger(value)&&value>=0&&value<=255;
+  const coordinate=value=>Number.isFinite(value)&&value>=0&&value<=1000000;
+  const unique=items=>new Set(items.map(item=>item.id)).size===items.length;
+  const range=(low,high)=>byte(low)&&byte(high)&&low<high;
+  if(version!==1||!Array.isArray(fields)||!fields.length||!Array.isArray(cards)||
+    !fields.every(item=>item&&validText(item.id)&&validText(item.name)&&byte(item.value))||!unique(fields)){
+    throw Error('方案版本或帧变量无效。');
+  }
+  const ids=new Set(fields.map(item=>item.id));
+  if(!cards.every(card=>{
+    if(!card||!validText(card.id)||!validText(card.name)||!ids.has(card.a)||
+      ![card.x,card.y,card.w,card.h].every(coordinate)||card.w===0||card.h===0)return false;
+    if(card.type==='button')return byte(card.value)&&validText(card.label);
+    if(card.type==='switch')return byte(card.off)&&byte(card.on)&&card.off!==card.on;
+    if(card.type==='slider')return range(card.lo,card.hi);
+    return card.type==='xy'&&ids.has(card.b)&&card.a!==card.b&&range(card.lo,card.hi)&&range(card.ylo,card.yhi);
+  })||!unique(cards))throw Error('组件布局、取值范围或变量绑定无效。');
+  return {fields,cards};
+}
+function loadProfile(profile){
+  stopLive();
+  localStorage.setItem(key,JSON.stringify(profile));
+  Object.assign(state,profile);
+  render();
+}
+$('exportProfile').onclick=()=>{
+  const blob=new Blob([JSON.stringify({version:1,fields:state.fields,cards:state.cards},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=make('a');
+  link.href=url;
+  link.download='蓝牙控制台方案.json';
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$('importProfile').onclick=()=>$('profileFile').click();
+$('profileFile').onchange=async event=>{
+  const file=event.target.files[0];
+  event.target.value='';
+  if(!file)return;
+  try{
+    const profile=validateProfile(JSON.parse(await file.text()));
+    if(!confirm('导入方案会替换当前变量和组件。继续吗？'))return;
+    loadProfile(profile);
+    $('profileStatus').textContent='已导入 '+file.name;
+  }catch(error){
+    $('profileStatus').textContent='导入失败：'+error.message;
+  }
+};
+function tab(raw){
+  stopLive();$('panel').hidden=raw;$('raw').hidden=!raw;
+  $('panelTab').setAttribute('aria-pressed',String(!raw));
+  $('rawTab').setAttribute('aria-pressed',String(raw));
+  if(!raw)surfaceSize();
+}
+$('panelTab').onclick=()=>tab(false);
+$('rawTab').onclick=()=>tab(true);
+$('sendFrame').onclick=()=>send(packet());
+$('sendRaw').onclick=()=>{
+  try{
+    const text=$('payload').value;
+    const bytes=$('encoding').selectedIndex===0?parseHex(text):new TextEncoder().encode(text);
+    if(!bytes.length)throw Error('请输入发送内容。');
+    send(bytes);
+  }catch(error){note(error.message);}
+};
+window.addEventListener('resize',surfaceSize);
+render();
+</script>
+</html>
+
+
+
+
+
+
+
+

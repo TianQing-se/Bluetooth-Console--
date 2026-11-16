@@ -1,0 +1,30 @@
+# Build outputs
+*.exe
+*.apk
+*.idsig
+*.zip
+*.class
+*.jar
+*.dex
+bin/
+obj/
+build/
+out/
+
+# Local signing material
+*.jks
+*.keystore
+*.p12
+*.pfx
+signing-password
+
+# IDE and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary build files
+.gradle/
+local.properties
